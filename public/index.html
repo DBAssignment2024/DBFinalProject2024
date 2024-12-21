@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@azure/storage-blob@latest/dist/storageBlob.min.js"></script>
+    <title>Shopping Page</title>
+    <script src="main.js" defer></script>
+    <link rel="stylesheet" href="styles.css">
+     <script>
+        // Function to fetch products from backend and render them dynamically
+        let cart=[];
+        async function fetchProducts() {
+            try {
+                const response = await fetch('http://localhost:3000/products');
+                const products = await response.json();
+
+                const productList = document.querySelector('.product-list');
+                productList.innerHTML = ''; // Clear any existing content
+
+                products.forEach(product => {
+                    const productCard = `
+                        <div class="product-card">
+                            <h3>${product.Name}</h3>
+                            <p>$${product.Price}</p>
+                            <button onclick="addToCart(${product.ProductID}, '${product.Name.replace(/'/g, "\\'")}', ${product.Price}, ${product.Category})">
+                                Add to Cart
+                            </button>
+                        </div>
+                    `;
+                    productList.innerHTML += productCard;
+                });
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        }
+        async function getCartDetails() {
+            console.log("Get cart details");
+            try {
+                const userId = localStorage.getItem('userId');
+                const token = localStorage.getItem('token');
+
+                // if (!token || !userId) {
+                //     console.error('User is not authenticated. Redirecting to login.');
+                //     window.location.href = 'login.html'; // Redirect if not authenticated
+                //     return;
+                // }
+
+                // Fetch cart details from the server
+                // const response = await fetch(`http://localhost:3000/cart?userId=${userId}`);
+
+
+
+                const response = await fetch(`http://localhost:3000/cart`, {
+                    headers: {
+                        'Content-Type': 'application/json', // Include the token in the Authorization header
+                    }
+                });
+
+                // if (!response.ok) {
+                //     throw new Error(`Error: ${response.status} ${response.statusText}`);
+                // }
+
+                const cart = await response.json();
+                console.log(cart);
+
+                // Optional: Render cart details
+                const cartContainer = document.querySelector('.cart-items');
+                cartContainer.innerHTML = ''; // Clear existing content
+
+                cart.forEach(item => {
+                    const cartItem = `
+                        <div class="cart-item">
+                            <h3>${item.ProductName}</h3>
+                            <p>Price: $${item.ProductPrice}</p>
+                            <p>Quantity: ${item.Quantity}</p>
+                        </div>
+                    `;
+                    cartContainer.innerHTML += cartItem;
+                });
+            } catch (error) {
+                console.error('Error fetching cart details:', error);
+            }
+        }
+
+        // <img src="${product.ImageURL}" alt="${product.ProductName}">
+
+        // Function to handle Add to Cart button click
+        function addToCart(productId, productName, productPrice) {
+            const userId = 1; // Replace with dynamic user ID if authentication is implemented
+            const quantity = 1; // Default quantity for adding an item
+            console.log("Inside HTMl add cart");
+            fetch('http://localhost:3000/cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, productId, productName, productPrice, quantity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(`${productName} has been added to your cart!`);
+            })
+            .catch(error => {
+                console.error('Error adding to cart:', error);
+                alert('Failed to add item to cart');
+            });
+        }
+        
+        // Fetch and render products when the page loads
+        window.onload = function () {
+        console.log("Calling get Cart details");
+        getCartDetails(); // Function to fetch cart details
+        console.log("Calling fetch product details");
+        fetchProducts();  // Function to fetch products
+    };
+
+    </script>
+</head>
+<body>
+    <header>
+        <div class="logo">ShopEase</div>
+        <div class="navigation">
+            <a href="signup.html" class="btn">Signup</a>
+            <a href="login.html" class="btn">Login</a>
+        </div>
+        <div class="search-bar">
+            <input type="text" placeholder="Search for products...">
+        </div>
+        <div class="cart">🛒 Cart</div>
+    </header>
+
+    <main class="main">
+        <section class="product-list">
+            <!-- Products will be rendered dynamically here -->
+        </section>
+        <section class="cart-section">
+            <h2>Your Cart</h2>
+            <div class="cart-items">
+                <!-- Cart items will be dynamically rendered here -->
+            </div>
+        </section>
+        
+
+        <section class="review-section">
+            <h2>Customer Reviews</h2>
+            <div class="review-form">
+                <textarea rows="4" placeholder="Write your review..."></textarea>
+                <div class="stars">
+                    <span>&#9733;</span>
+                    <span>&#9733;</span>
+                    <span>&#9733;</span>
+                    <span>&#9733;</span>
+                    <span>&#9733;</span>
+                </div>
+                <button class="btn">Submit Review</button>
+            </div>
+        </section>
+
+        <section class="order-section">
+            <h2>Place an Order</h2>
+            <form>
+                <input type="text" placeholder="Full Name">
+                <input type="text" placeholder="Shipping Address">
+                <input type="text" placeholder="Payment Method">
+                <button id="export-cart-btn" type="submit">Place Order</button>
+            </form>
+        </section>
+        <!-- <section class="export-section">
+            <h2>Export Cart</h2>
+            <button id="export-cart-btn">Export Cart to Azure</button>
+        </section> -->
+        
+        <script>
+            // const express = require('express');
+            // const { BlobServiceClient } = require('@azure/storage-blob');
+            // const fs = require('fs');
+            // const router = express.Router();
+
+   
+
+        const AZURE_STORAGE_CONNECTION_STRING = "NnwCCN6LXiSWlH2VCLUABuSKFNdLH4ZBlXuwQ6DJJG/vqwpiziaq8qSDqVEyynUEn6XDpgGtZNdW+AStLK0fCg==";
+        const CONTAINER_NAME = "db2024supplychainblob";
+
+        // Event listener for the export button
+        document.getElementById('export-cart-btn').addEventListener('click', exportCart);
+
+        // Export Cart to Azure Blob Storage
+        async function exportCart() {
+            console.log("called export cart function");
+            const userId = localStorage.getItem('userId');
+            // if (!userId) {
+            //     alert('UserId is required');
+            //     return;
+            // }
+
+            try {
+                // Fetch cart data from the server
+                const response = await fetch(`http://localhost:3000/cart?userId=${userId}`);
+
+                //const response = await fetch(`localhost:3000/cart?userId=${userId}`);
+                const cartItems = await response.json();
+
+                if (cartItems.length === 0) {
+                    alert('Cart is empty. No data to export.');
+                    return;
+                }
+
+                // Convert cart items to JSON
+                const cartJson = JSON.stringify(cartItems, null, 2);
+                const fileName = `cart_${userId}_${Date.now()}.json`;
+
+                // Connect to Azure Blob Storage using the SDK for the browser
+                const blobServiceClient = Azure.StorageBlob.BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
+                const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+
+                // Ensure the container exists
+                await containerClient.createIfNotExists();
+
+                // Create a block blob client
+                const blockBlobClient = containerClient.getBlockBlobClient(fileName);
+
+                // Upload JSON data to Azure Blob Storage
+                const uploadBlobResponse = await blockBlobClient.upload(cartJson, cartJson.length);
+
+                console.log(`Cart data uploaded to Azure Blob Storage as ${fileName}`);
+                alert(`Cart data successfully exported as ${fileName}`);
+            } catch (err) {
+                console.error('Error exporting cart:', err);
+                alert('Failed to export cart data');
+            }
+        }
+            // const SAS_TOKEN = "sv=2022-11-02&ss=bfqt&srt=c&sp=rwdlacupiytfx&se=2024-12-23T09:54:55Z&st=2024-12-21T01:54:55Z&spr=https&sig=%2FvO%2BkSqEY5ZF5fwLHsHrrNaS0kCHWGpar1JuFBiO%2F4g%3D"; // Replace with your actual SAS token
+            // const CONTAINER_NAME = "db2024supplychainblob"; // Your Azure Blob container name
+
+            // // Event listener for the export button
+            // document.getElementById('export-cart-btn').addEventListener('click', exportCart);
+
+            // // Export Cart to Azure Blob Storage using REST API
+            // async function exportCart(event) {
+            //     event.preventDefault(); // Prevent form submission
+
+            //     const userId = localStorage.getItem('userId');
+            //     if (!userId) {
+            //         alert('UserId is required');
+            //         return;
+            //     }
+
+            //     try {
+            //         // Fetch cart data from your server
+            //         const response = await fetch(`http://localhost:3000/cart?userId=${userId}`);
+            //         const cartItems = await response.json();
+
+            //         if (cartItems.length === 0) {
+            //             alert('Cart is empty. No data to export.');
+            //             return;
+            //         }
+
+            //         const cartJson = JSON.stringify(cartItems, null, 2);
+            //         const fileName = `cart_${userId}_${Date.now()}.json`;
+
+            //         // Create the URL to upload to Azure Blob Storage
+            //         const blobUrl = `https://db2024supplychainblob.blob.core.windows.net/?sv=2022-11-02&ss=bfqt&srt=c&sp=rwdlacupiytfx&se=2024-12-23T09:54:55Z&st=2024-12-21T01:54:55Z&spr=https&sig=%2FvO%2BkSqEY5ZF5fwLHsHrrNaS0kCHWGpar1JuFBiO%2F4g%3D`;
+
+            //         // Send a PUT request to upload the file
+            //         const uploadResponse = await fetch(blobUrl, {
+            //             method: 'PUT',
+            //             headers: {
+            //                 'Content-Type': 'application/json',
+            //             },
+            //             body: cartJson,
+            //         });
+
+            //         if (uploadResponse.ok) {
+            //             console.log(`Cart data uploaded as ${fileName}`);
+            //             alert(`Cart data successfully exported as ${fileName}`);
+            //         } else {
+            //             throw new Error('Failed to upload data to Azure Blob Storage');
+            //         }
+            //     } catch (err) {
+            //         console.error('Error exporting cart:', err);
+            //         alert('Failed to export cart data');
+            //     }
+            // }
+
+
+
+           
+        </script>        
+    </main>
+    <script src="main.js" defer></script>
+    </body>
+</html>
