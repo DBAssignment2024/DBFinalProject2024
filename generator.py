@@ -1,7 +1,8 @@
 import random
 from faker import Faker
-import sqlite3
 
+from datetime import datetime, timedelta
+from config import num_products
 fake = Faker()
 
 products = [
@@ -19,7 +20,9 @@ def generate_customers(num_customers=10):
         email = fake.email()
         addr = fake.address()
         phone = fake.phone_number()[:14]
-        yield (first_name, last_name, email, addr, phone)
+        username = fake.user_name()
+        passwordHash = "!@#$%^&*()"
+        yield (first_name, last_name, email, addr, phone, username, passwordHash)
 
 
 def generate_products():
@@ -43,3 +46,24 @@ def generate_products():
 
             yield (product_id, name, description, category_name, price)
             product_id += 1
+
+
+def generate_orders(n=200):
+    statuses = ["Pending", "Shipped", "Delivered", "Cancelled"]
+
+    for order_id in range(1, 201):
+        order_date = (datetime.now() - timedelta(days=random.randint(0, 365))).strftime(
+            '%Y-%m-%d')
+        total_amount = round(random.uniform(10, 1000), 2)
+        status = random.choice(statuses)
+        customer_id = random.randint(1, 1000)
+
+        yield (order_id, order_date, total_amount, status, customer_id)
+
+def generate_order_items(num_items):
+    for order_item_id in range(1, num_items + 1):
+        quantity = random.randint(1, 10)
+        unit_price = round(random.uniform(5, 500), 2)
+        order_id = random.randint(1, 200)
+        product_id = random.randint(1, num_products)
+        yield (order_item_id, quantity, unit_price, order_id, product_id)

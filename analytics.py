@@ -104,7 +104,7 @@ def plotProductSales():
     except Exception as e:
         print("An error occurred:", e)
 
-def predict_next_week_sales():
+def predict_future_sales():
     print("Connecting to database...")
     try:
 
@@ -142,24 +142,30 @@ def predict_next_week_sales():
             return
 
         df['OrderDate'] = pd.to_datetime(df['OrderDate'])
+
         df.set_index('OrderDate', inplace=True)
-        df = df.asfreq('D', fill_value=0)
-        model = ARIMA(df['DailyQuantity'], order=(7, 1, 0))
+        df = df['DailyQuantity'].resample('M').sum()
+
+        if df.isnull().all():
+            print("No valid data available for forecasting.")
+            return
+
+        model = ARIMA(df, order=(3, 1, 0))
         model_fit = model.fit()
 
-        forecast = model_fit.forecast(steps=7)
-        forecast_dates = pd.date_range(df.index[-1] + pd.Timedelta(days=1), periods=7, freq='D')
+        forecast = model_fit.forecast(steps=3)
+        forecast_dates = pd.date_range(df.index[-1] + pd.offsets.MonthBegin(1), periods=3, freq='MS')
 
         forecast_df = pd.DataFrame({'ForecastDate': forecast_dates, 'PredictedQuantity': forecast})
-        print(f"\nPredicted total quantity demanded for the upcoming week: {forecast.sum():.1f}")
 
 
         plt.figure(figsize=(12, 6))
-        plt.plot(df.index, df['DailyQuantity'], label='Historical sales quantites', marker='o')
+        plt.plot(df.index, df, label='Historical sales quantities', marker='o')
         plt.plot(forecast_dates, forecast, label='Forecast quantities', marker='x', color='red')
-        plt.title(f"7 Days Sales Forecast for {df['Name'].iloc[0]}")
+
+        plt.title(f"3-Month Sales Forecast for product with productID {product_id}")
         plt.xlabel("Date")
-        plt.ylabel("Daily Quantity")
+        plt.ylabel("Total Quantity Sold")
         plt.legend()
         plt.grid()
         plt.show()

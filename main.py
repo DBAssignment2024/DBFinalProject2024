@@ -2,7 +2,7 @@ from product_recommendation import *
 from analytics import *
 import numpy as np
 from config import num_products
-
+from query import *
 
 def main():
     # for testing product_recommendation.py
@@ -24,7 +24,10 @@ def main():
     print("Testing functions in analytics.py ~~~")
     getDailyOrderAmount()
     plotProductSales()
-    predict_next_week_sales()
+    predict_future_sales()
+
+def populate():
+    populate_order_items(500)
 
 
 if __name__ == '__main__':
