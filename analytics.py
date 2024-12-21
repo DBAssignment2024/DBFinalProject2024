@@ -5,17 +5,8 @@ import pyodbc
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.arima.model import ARIMA
+from config import connection_string
 
-connection_string = """
-        Driver={ODBC Driver 18 for SQL Server};
-        Server=tcp:scn.database.windows.net,1433;
-        Database=SupplyChain;
-        Uid=CloudSA10a2445c;
-        Pwd=DBProject@2024;  
-        Encrypt=yes;
-        TrustServerCertificate=no;
-        Connection Timeout=30;
-        """
 def getDailyOrderAmount():
     global connection_string
     print("Connecting to database...")
@@ -114,7 +105,6 @@ def plotProductSales():
         print("An error occurred:", e)
 
 def predict_next_week_sales():
-    global connection_string
     print("Connecting to database...")
     try:
 

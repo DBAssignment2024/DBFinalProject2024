@@ -20,29 +20,9 @@ def generate_customers(num_customers=10):
         addr = fake.address()
         phone = fake.phone_number()[:14]
         yield (first_name, last_name, email, addr, phone)
-def generate_reviews(products, num_reviews):
-    reviews = []
-    for _ in range(num_reviews):
-        product = random.choice(products)
-        review = {
-            "product_id": product["id"],
-            "product_name": product["name"],
-            "reviewer_name": fake.name(),
-            "rating": random.randint(1, 5),
-            "review_text": fake.sentence(),
-            "review_date": fake.date_this_year(),
-        }
-        reviews.append(review)
-
-    print(reviews)
-    return reviews
-
-
-
 
 
 def generate_products():
-
     food_items = ["Apple", "Banana", "Carrot", "Steak", "Pizza", "Pasta", "Ice Cream", "Bread", "Cheese", "Salad"]
     book_titles = ["The Great Gatsby", "1984", "To Kill a Mockingbird", "The Catcher in the Rye", "Moby Dick",
                    "War and Peace", "Pride and Prejudice", "The Hobbit", "Harry Potter", "Lord of the Rings"]

@@ -1,20 +1,12 @@
 import pyodbc
 from generator import generate_customers
+from config import connection_string
+
+# Just a file for populating tables with some random data here. Feel free to ignore
+
 def query():
     print("Query")
     try:
-
-        connection_string = """
-        Driver={ODBC Driver 18 for SQL Server};
-        Server=tcp:scn.database.windows.net,1433;
-        Database=SupplyChain;
-        Uid=CloudSA10a2445c;
-        Pwd=DBProject@2024;  
-        Encrypt=yes;
-        TrustServerCertificate=no;
-        Connection Timeout=30;
-        """
-
         conn = pyodbc.connect(connection_string)
         cursor = conn.cursor()
         print("Connected to server")
